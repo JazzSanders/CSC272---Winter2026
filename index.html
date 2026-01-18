@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickQuiz - Real-Time Battle</title>
+    <link rel="stylesheet" href="index-styles.css">
+</head>
+<body>
+
+    <div id="app" class="container">
+        <section id="role-screen" class="screen">
+            <h1>QuickQuiz</h1>
+            <div class="card">
+                <button class="btn-primary" onclick="initSession('creator')">Create New Session</button>
+                <hr>
+                <input type="text" id="join-code" placeholder="Enter Game PIN">
+                <button class="btn-secondary" onclick="initSession('player')">Join Session</button>
+            </div>
+        </section>
+
+        <section id="game-screen" class="screen hidden">
+            <header class="game-header">
+                <div id="timer-circle" class="timer">10</div>
+                <div class="status-bar">
+                    <span id="player-score-display">Score: 0</span>
+                    <span id="session-info">PIN: 1234</span>
+                </div>
+            </header>
+
+            <main class="question-area">
+                <h2 id="question-text">Loading question...</h2>
+                <div id="answer-grid" class="answer-grid">
+                    </div>
+            </main>
+        </section>
+
+        <section id="result-screen" class="screen hidden">
+            <div class="card">
+                <h2>Game Over!</h2>
+                <div id="winner-podium"></div>
+                <button class="btn-primary" onclick="location.reload()">Play Again</button>
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
