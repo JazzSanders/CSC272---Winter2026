@@ -43,8 +43,17 @@ function saveQuestion() {
 
 // --- SECTION 2: SESSION MGMT ---
 async function initSession(role) {
+    console.log("Attempting to init session as:", role);
+    
+    // Guard Clause: Don't let Creator start an empty game
+    if (role === 'creator' && questions.length === 0) {
+        alert("Please add at least one question before starting!");
+        return;
+    }
+
     gameState.role = role;
-    gameState.playerName = document.getElementById('player-name').value || "Anonymous";
+    const nameField = document.getElementById('player-name');
+    gameState.playerName = (nameField && nameField.value) ? nameField.value : "Anonymous";
     
     if (role === 'player') {
         gameState.sessionId = document.getElementById('join-code').value;
@@ -54,44 +63,57 @@ async function initSession(role) {
 
     if (!gameState.sessionId) return alert("PIN Required");
 
-    // Anonymous Auth for Security Rules
-    const userCredential = await firebase.auth().signInAnonymously();
-    const uid = userCredential.user.uid;
+    try {
+        // Auth Check: This is the most common point of failure
+        console.log("Connecting to Firebase...");
+        const userCredential = await firebase.auth().signInAnonymously();
+        const uid = userCredential.user.uid;
+        console.log("Connected! UID:", uid);
 
-    const sessionRef = db.ref('sessions/' + gameState.sessionId);
+        const sessionRef = db.ref('sessions/' + gameState.sessionId);
 
-    if (role === 'creator') {
-        sessionRef.set({
-            creatorId: uid,
-            questions: questions,
-            currentQuestion: 0,
-            status: "active"
-        });
-        document.getElementById('editor-screen').classList.add('hidden');
-        document.getElementById('audience-screen').classList.remove('hidden');
-        updateAudienceView();
-    } else {
-        document.getElementById('role-screen').classList.add('hidden');
-        document.getElementById('game-screen').classList.remove('hidden');
-    }
+        if (role === 'creator') {
+            // Initialize the database session
+            await sessionRef.set({
+                creatorId: uid,
+                questions: questions,
+                currentQuestion: 0,
+                status: "active",
+                timestamp: Date.now()
+            });
+            
+            document.getElementById('editor-screen').classList.add('hidden');
+            document.getElementById('audience-screen').classList.remove('hidden');
+            updateAudienceView();
+        } else {
+            document.getElementById('role-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+        }
 
-    // Listen for Game Sync
-    sessionRef.on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            if (role === 'player') questions = data.questions;
-            if (data.currentQuestion !== gameState.currentQuestion) {
-                gameState.currentQuestion = data.currentQuestion;
-                if (gameState.currentQuestion < questions.length) {
-                    loadQuestion();
-                } else {
-                    showResults();
+        // Listener for Game Sync
+        sessionRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.questions) {
+                // Players need to download the questions from the Creator's session
+                if (role === 'player') questions = data.questions;
+                
+                if (data.currentQuestion !== gameState.currentQuestion) {
+                    gameState.currentQuestion = data.currentQuestion;
+                    if (gameState.currentQuestion < questions.length) {
+                        loadQuestion();
+                    } else {
+                        showResults();
+                    }
                 }
             }
-        }
-    });
+        });
 
-    document.getElementById('session-info').innerText = `PIN: ${gameState.sessionId}`;
+        document.getElementById('session-info').innerText = `PIN: ${gameState.sessionId}`;
+
+    } catch (error) {
+        console.error("Critical Auth/Database Error:", error);
+        alert("Failed to start game: " + error.message);
+    }
 }
 
 // --- SECTION 3: GAMEPLAY ---
