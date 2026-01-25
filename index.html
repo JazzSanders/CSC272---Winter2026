@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz</title>
+    <title>Modern Quiz</title>
     <link rel="stylesheet" href="index-styles.css">
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
@@ -14,50 +14,50 @@
     <div id="app" class="container">
     <section id="role-screen" class="screen card">
         <h1 style="color: var(--purple); font-size: 2.5rem; margin-bottom: 10px;">Quiz Game</h1>
-        <p style="color: #666; margin-bottom: 20px;">Ready to play?</p>
-        
         <div class="join-section">
             <input type="text" id="player-name" placeholder="Your Name">
             <input type="text" id="join-code" placeholder="4-Digit PIN">
             <button class="btn-primary" onclick="initSession('player')">Join Game</button>
         </div>
-        
         <div style="margin-top: 25px; border-top: 1px solid #eee; padding-top: 20px;">
-            <p style="font-size: 0.9rem; color: #888;">Host your own session:</p>
-            <button class="btn-secondary" onclick="showEditor()">Create New Quiz</button>
+            <button class="btn-secondary" onclick="showScreen('editor-screen')">Create New Quiz</button>
         </div>
     </section>
 
-    <section id="editor-screen" class="screen hidden card">
-        <div style="display: flex; align-items: center; margin-bottom: 20px;">
-             <button onclick="location.reload()" style="background:none; border:none; cursor:pointer; color:var(--purple)">← Back</button>
-             <h2 style="margin: 0 auto;">New Quiz</h2>
+    <section id="editor-screen" class="screen card hidden">
+        <h2>New Quiz Creator</h2>
+        <input type="text" id="q-input" placeholder="Enter your question...">
+        <div class="editor-grid">
+            <input type="text" id="opt-0-in" placeholder="Red Option">
+            <input type="text" id="opt-1-in" placeholder="Blue Option">
+            <input type="text" id="opt-2-in" placeholder="Yellow Option">
+            <input type="text" id="opt-3-in" placeholder="Green Option">
         </div>
-
-        <input type="text" id="q-input" placeholder="Enter your question here...">
-        
-        <div class="editor-grid" style="margin: 15px 0;">
-            <input type="text" id="opt-0-in" placeholder="Red Option" style="border-left: 5px solid var(--red)">
-            <input type="text" id="opt-1-in" placeholder="Blue Option" style="border-left: 5px solid var(--blue)">
-            <input type="text" id="opt-2-in" placeholder="Yellow Option" style="border-left: 5px solid var(--yellow)">
-            <input type="text" id="opt-3-in" placeholder="Green Option" style="border-left: 5px solid var(--green)">
-        </div>
-
-        <div style="text-align: left; margin-bottom: 15px;">
-            <label style="font-size: 0.8rem; font-weight: bold; color: #666;">CORRECT ANSWER</label>
-            <select id="correct-opt">
-                <option value="0">Red</option>
-                <option value="1">Blue</option>
-                <option value="2">Yellow</option>
-                <option value="3">Green</option>
-            </select>
-        </div>
-
-        <button class="btn-primary" onclick="saveQuestion()">+ Add Question</button>
-        <button class="btn-secondary" id="start-session-btn" onclick="initSession('creator')" style="display:none;">Finish & Start PIN</button>
+        <select id="correct-opt">
+            <option value="0">Red is Correct</option>
+            <option value="1">Blue is Correct</option>
+            <option value="2">Yellow is Correct</option>
+            <option value="3">Green is Correct</option>
+        </select>
+        <button class="btn-primary" onclick="saveQuestion()">+ Save Question</button>
+        <button class="btn-secondary" id="start-session-btn" onclick="initSession('creator')" style="display:none;">Finish & Start Session</button>
     </section>
-    
-    </div>
+
+    <section id="audience-screen" class="screen card hidden">
+        <div class="big-pin-box">
+            <p>JOINING PIN</p>
+            <h1 id="big-pin-display">----</h1>
+        </div>
+        <div id="leaderboard-list"></div>
+        <button class="btn-primary" onclick="nextQuestion()">Next Question</button>
+    </section>
+
+    <section id="game-screen" class="screen card hidden">
+        <div id="timer-circle" class="timer">10</div>
+        <h2 id="question-text">Waiting for host...</h2>
+        <div id="answer-grid" class="answer-grid"></div>
+    </section>
+</div>
 
     <script src="script.js"></script>
 </body>

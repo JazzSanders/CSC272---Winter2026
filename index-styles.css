@@ -30,6 +30,14 @@ body {
     backdrop-filter: blur(10px);
 }
 
+.hidden {
+    display: none !important;
+}
+
+.screen {
+    transition: opacity 0.3s ease-in-out;
+}
+
 /* Inputs */
 input, select {
     width: 100%;
