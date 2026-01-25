@@ -129,7 +129,10 @@ async function initSession(role) {
             }
         });
 
-        document.getElementById('session-info').innerText = `PIN: ${gameState.sessionId}`;
+        const sessionInfo = document.getElementById('session-info');
+        if (sessionInfo) {
+            sessionInfo.innerText = `PIN: ${gameState.sessionId}`;
+        }
     } catch (e) { 
         alert("Error connecting: " + e.message); 
     }

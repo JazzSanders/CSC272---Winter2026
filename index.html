@@ -14,6 +14,8 @@
     <div id="app" class="container">
     <section id="role-screen" class="screen card">
         <h1 style="color: var(--purple); font-size: 2.5rem; margin-bottom: 10px;">Quiz Game</h1>
+        <p id="session-info" style="font-weight: bold; color: var(--purple);"></p> 
+        
         <div class="join-section">
             <input type="text" id="player-name" placeholder="Your Name">
             <input type="text" id="join-code" placeholder="4-Digit PIN">
@@ -48,14 +50,32 @@
             <p>JOINING PIN</p>
             <h1 id="big-pin-display">----</h1>
         </div>
+        
+        <div id="correct-count-box" class="hidden">
+            Correct Answers: <span id="correct-total">0</span>
+        </div>
+        <div class="chart-container" style="display: flex; justify-content: space-around; align-items: flex-end; height: 100px; margin: 20px 0;">
+            <div id="bar-0" class="opt-0" style="width: 20px; height: 0px;"></div>
+            <div id="bar-1" class="opt-1" style="width: 20px; height: 0px;"></div>
+            <div id="bar-2" class="opt-2" style="width: 20px; height: 0px;"></div>
+            <div id="bar-3" class="opt-3" style="width: 20px; height: 0px;"></div>
+        </div>
+
         <div id="leaderboard-list"></div>
         <button class="btn-primary" onclick="nextQuestion()">Next Question</button>
     </section>
 
     <section id="game-screen" class="screen card hidden">
+        <div id="player-score-display" style="font-weight: bold; margin-bottom: 10px;">Score: 0</div>
         <div id="timer-circle" class="timer">10</div>
         <h2 id="question-text">Waiting for host...</h2>
         <div id="answer-grid" class="answer-grid"></div>
+    </section>
+
+    <section id="result-screen" class="screen card hidden">
+        <h2>Game Over!</h2>
+        <div id="winner-podium"></div>
+        <button class="btn-primary" onclick="location.reload()">Play Again</button>
     </section>
 </div>
 
