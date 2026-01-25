@@ -1,6 +1,6 @@
 // 1. Firebase Config
 const firebaseConfig = {
-    apiKey: "1:223114775986:web:f879ac4efcdf2bdd11a8ab",
+    apiKey: "223114775986",
     databaseURL: "https://quizgamewebapp-default-rtdb.firebaseio.com/",
     projectId: "quizgamewebapp",
 };
