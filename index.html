@@ -3,19 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuickQuiz - Real-Time Battle</title>
+    <title>Quiz Game Web Application</title>
     <link rel="stylesheet" href="index-styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 </head>
 <body>
 
     <div id="app" class="container">
         <section id="role-screen" class="screen">
-            <h1>QuickQuiz</h1>
+            <h1>Quiz</h1>
             <div class="card">
-                <button class="btn-primary" onclick="initSession('creator')">Create New Session</button>
+                <input type="text" id="player-name" placeholder="Enter Your Name">
+                <button class="btn-primary" onclick="showEditor()">Create New Quiz</button>
                 <hr>
                 <input type="text" id="join-code" placeholder="Enter Game PIN">
                 <button class="btn-secondary" onclick="initSession('player')">Join Session</button>
+            </div>
+        </section>
+
+        <section id="editor-screen" class="screen hidden">
+            <h2>Question Creator</h2>
+            <div class="card">
+                <input type="text" id="q-input" placeholder="Enter your question">
+                <div class="editor-grid">
+                    <input type="text" id="opt-0-in" placeholder="Red Answer">
+                    <input type="text" id="opt-1-in" placeholder="Blue Answer">
+                    <input type="text" id="opt-2-in" placeholder="Yellow Answer">
+                    <input type="text" id="opt-3-in" placeholder="Green Answer">
+                </div>
+                <select id="correct-opt">
+                    <option value="0">Red is Correct</option>
+                    <option value="1">Blue is Correct</option>
+                    <option value="2">Yellow is Correct</option>
+                    <option value="3">Green is Correct</option>
+                </select>
+                <button class="btn-primary" onclick="saveQuestion()">Save & Add Another</button>
+                <button class="btn-secondary" onclick="initSession('creator')">Done: Start Session</button>
             </div>
         </section>
 
@@ -24,15 +49,29 @@
                 <div id="timer-circle" class="timer">10</div>
                 <div class="status-bar">
                     <span id="player-score-display">Score: 0</span>
-                    <span id="session-info">PIN: 1234</span>
+                    <span id="session-info">PIN: ----</span>
                 </div>
             </header>
-
             <main class="question-area">
-                <h2 id="question-text">Loading question...</h2>
-                <div id="answer-grid" class="answer-grid">
-                    </div>
+                <h2 id="question-text">Waiting for Creator...</h2>
+                <div id="answer-grid" class="answer-grid"></div>
             </main>
+        </section>
+
+        <section id="audience-screen" class="screen hidden">
+            <div class="stats-container">
+                <h2>Top Players</h2>
+                <div id="leaderboard-list"></div>
+                <hr>
+                <h3>Answer Distribution</h3>
+                <div class="chart-container">
+                    <div id="bar-0" class="bar opt-0"></div>
+                    <div id="bar-1" class="bar opt-1"></div>
+                    <div id="bar-2" class="bar opt-2"></div>
+                    <div id="bar-3" class="bar opt-3"></div>
+                </div>
+                <button class="btn-primary" onclick="nextQuestion()">Next Question</button>
+            </div>
         </section>
 
         <section id="result-screen" class="screen hidden">
