@@ -7,6 +7,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+// 2. Global State
 let questions = [];
 let gameState = {
     role: null,
@@ -19,13 +20,28 @@ let gameState = {
     playerName: ""
 };
 
-function showEditor() {
-    // Hide the landing screen
-    document.getElementById('role-screen').classList.add('hidden');
-    // Show the editor card
-    document.getElementById('editor-screen').classList.remove('hidden');
+/**
+ * UI NAVIGATION
+ * Hides all elements with class 'screen' and shows the target ID
+ */
+function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(screen => {
+        screen.classList.add('hidden');
+    });
+    const target = document.getElementById(screenId);
+    if (target) {
+        target.classList.remove('hidden');
+    }
 }
 
+// Triggered by "Create New Quiz" button
+function showEditor() {
+    showScreen('editor-screen');
+}
+
+/**
+ * QUIZ CREATION LOGIC
+ */
 function saveQuestion() {
     const qValue = document.getElementById('q-input').value;
     const opt0 = document.getElementById('opt-0-in').value;
@@ -39,30 +55,37 @@ function saveQuestion() {
         q: qValue,
         a: [
             opt0,
-            document.getElementById('opt-1-in').value,
-            document.getElementById('opt-2-in').value,
-            document.getElementById('opt-3-in').value
+            document.getElementById('opt-1-in').value || "---",
+            document.getElementById('opt-2-in').value || "---",
+            document.getElementById('opt-3-in').value || "---"
         ],
         correct: parseInt(document.getElementById('correct-opt').value)
     };
 
     questions.push(qObj);
     
-    // Clear inputs for the next question
+    // Reset inputs for next question
     document.querySelectorAll('#editor-screen input').forEach(i => i.value = "");
     
-    // Show the "Start" button now that we have questions
+    // Show the "Finish" button now that we have at least one question
     document.getElementById('start-session-btn').style.display = "block";
     
     alert(`Question ${questions.length} saved!`);
 }
 
+/**
+ * SESSION INITIALIZATION (Join or Host)
+ */
 async function initSession(role) {
     if (role === 'creator' && questions.length === 0) return alert("Add questions first!");
 
     gameState.role = role;
     gameState.playerName = document.getElementById('player-name').value || "Anonymous";
-    gameState.sessionId = (role === 'player') ? document.getElementById('join-code').value : Math.floor(1000 + Math.random() * 9000).toString();
+    
+    // Generate PIN for creator or get PIN from input for player
+    gameState.sessionId = (role === 'player') 
+        ? document.getElementById('join-code').value 
+        : Math.floor(1000 + Math.random() * 9000).toString();
 
     if (!gameState.sessionId) return alert("PIN Required");
 
@@ -71,20 +94,23 @@ async function initSession(role) {
         const sessionRef = db.ref('sessions/' + gameState.sessionId);
 
         if (role === 'creator') {
+            // Setup Database for new session
             await sessionRef.set({
                 questions: questions,
                 currentQuestion: 0,
                 status: "active"
             });
-            document.getElementById('editor-screen').classList.add('hidden');
-            document.getElementById('audience-screen').classList.remove('hidden');
+            
+            // Switch to Audience View
+            showScreen('audience-screen');
             document.getElementById('big-pin-display').innerText = gameState.sessionId;
             updateAudienceView();
         } else {
-            document.getElementById('role-screen').classList.add('hidden');
-            document.getElementById('game-screen').classList.remove('hidden');
+            // Switch to Game View
+            showScreen('game-screen');
         }
 
+        // Listen for live updates
         sessionRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (!data) return;
@@ -104,9 +130,14 @@ async function initSession(role) {
         });
 
         document.getElementById('session-info').innerText = `PIN: ${gameState.sessionId}`;
-    } catch (e) { alert(e.message); }
+    } catch (e) { 
+        alert("Error connecting: " + e.message); 
+    }
 }
 
+/**
+ * GAMEPLAY LOGIC
+ */
 function loadQuestion() {
     gameState.isAnswered = false;
     clearInterval(gameState.timerId);
@@ -148,11 +179,17 @@ function handleAnswer(selectedIndex) {
         gameState.score += (gameState.timer * 100) + 100;
         db.ref(`sessions/${gameState.sessionId}/leaderboard/${gameState.playerName}`).set(gameState.score);
     }
+    
+    // Log response for the bar chart
     db.ref(`sessions/${gameState.sessionId}/responses/${selectedIndex}`).transaction(c => (c || 0) + 1);
+    
     document.getElementById('player-score-display').innerText = `Score: ${gameState.score}`;
     document.querySelectorAll('.answer-opt').forEach(btn => btn.disabled = true);
 }
 
+/**
+ * CREATOR CONTROLS
+ */
 function nextQuestion() {
     if (gameState.currentQuestion >= questions.length - 1) {
         db.ref(`sessions/${gameState.sessionId}`).update({ status: "finished" });
@@ -163,6 +200,7 @@ function nextQuestion() {
 }
 
 function updateAudienceView() {
+    // Sync Leaderboard
     db.ref(`sessions/${gameState.sessionId}/leaderboard`).orderByValue().limitToLast(5).on('value', snap => {
         const list = document.getElementById('leaderboard-list');
         list.innerHTML = "";
@@ -171,37 +209,37 @@ function updateAudienceView() {
         });
     });
 
+    // Sync Response Chart
     db.ref(`sessions/${gameState.sessionId}/responses`).on('value', snap => {
         const data = snap.val() || {};
         const currentQ = questions[gameState.currentQuestion];
         if (!currentQ) return;
 
-        const correctCount = data[currentQ.correct] || 0;
         const countBox = document.getElementById('correct-count-box');
-        
         if (Object.keys(data).length > 0) {
             countBox.classList.remove('hidden');
-            document.getElementById('correct-total').innerText = correctCount;
-        } else {
-            countBox.classList.add('hidden');
+            document.getElementById('correct-total').innerText = data[currentQ.correct] || 0;
         }
 
         for (let i = 0; i < 4; i++) {
             const bar = document.getElementById(`bar-${i}`);
-            bar.style.height = `${(data[i] || 0) * 30}px`;
-            bar.innerText = data[i] || 0;
+            bar.style.height = `${(data[i] || 0) * 20}px`;
+            bar.innerText = data[i] || "";
         }
     });
 }
 
+/**
+ * END GAME
+ */
 function showResults() {
-    document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-    document.getElementById('result-screen').classList.remove('hidden');
+    showScreen('result-screen');
     
     db.ref(`sessions/${gameState.sessionId}/leaderboard`).orderByValue().limitToLast(1).once('value', snap => {
         let winner = "No one!";
         let highScore = 0;
         snap.forEach(c => { winner = c.key; highScore = c.val(); });
+        
         document.getElementById('winner-podium').innerHTML = `
             <h1 style="font-size:4rem">👑</h1>
             <h3>Winner: ${winner}</h3>
