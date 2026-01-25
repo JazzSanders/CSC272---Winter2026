@@ -35,4 +35,29 @@ input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #dd
 .bar { width: 40px; color: white; transition: height 0.5s; display: flex; align-items: flex-start; justify-content: center; font-size: 0.8rem; }
 .board-row { display: flex; justify-content: space-between; padding: 10px; background: #eee; margin: 5px 0; border-radius: 5px; }
 
+.big-pin-box {
+    background: #46178f;
+    color: white;
+    padding: 20px;
+    border-radius: 15px;
+    margin-bottom: 25px;
+    box-shadow: 0 6px 0 #2a0e57;
+    text-align: center;
+}
+
+.big-pin-box p {
+    margin: 0;
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    font-weight: bold;
+    opacity: 0.8;
+}
+
+#big-pin-display {
+    margin: 5px 0 0 0;
+    font-size: 4rem;
+    letter-spacing: 8px;
+    font-family: 'Courier New', Courier, monospace; /* Monospaced for clear PIN reading */
+}
+
 @media (max-width: 600px) { .answer-grid { grid-template-columns: 1fr; } }
