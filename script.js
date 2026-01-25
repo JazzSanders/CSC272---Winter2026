@@ -20,24 +20,41 @@ let gameState = {
 };
 
 function showEditor() {
+    // Hide the landing screen
     document.getElementById('role-screen').classList.add('hidden');
+    // Show the editor card
     document.getElementById('editor-screen').classList.remove('hidden');
 }
 
 function saveQuestion() {
+    const qValue = document.getElementById('q-input').value;
+    const opt0 = document.getElementById('opt-0-in').value;
+    
+    if(!qValue || !opt0) {
+        alert("Please fill in the question and at least the first option.");
+        return;
+    }
+
     const qObj = {
-        q: document.getElementById('q-input').value,
+        q: qValue,
         a: [
-            document.getElementById('opt-0-in').value,
+            opt0,
             document.getElementById('opt-1-in').value,
             document.getElementById('opt-2-in').value,
             document.getElementById('opt-3-in').value
         ],
         correct: parseInt(document.getElementById('correct-opt').value)
     };
+
     questions.push(qObj);
+    
+    // Clear inputs for the next question
     document.querySelectorAll('#editor-screen input').forEach(i => i.value = "");
-    alert("Question Added!");
+    
+    // Show the "Start" button now that we have questions
+    document.getElementById('start-session-btn').style.display = "block";
+    
+    alert(`Question ${questions.length} saved!`);
 }
 
 async function initSession(role) {
