@@ -2,62 +2,27 @@
     --red: #e21b3c; --blue: #1368ce;
     --yellow: #d89e00; --green: #26890c;
     --dark: #333; --light: #f2f2f2;
+    --purple: #46178f;
 }
 
-body {
-    background-color: var(--light);
-    font-family: 'Montserrat', sans-serif;
-    margin: 0; display: flex; justify-content: center;
-}
-
-.container { width: 100%; max-width: 800px; padding: 20px; }
+body { background-color: var(--light); font-family: sans-serif; margin: 0; display: flex; justify-content: center; }
+.container { width: 100%; max-width: 600px; padding: 20px; }
 .hidden { display: none !important; }
 .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
 
-/* Buttons & Inputs */
-.btn-primary, .btn-secondary {
-    width: 100%; padding: 15px; margin: 10px 0;
-    border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
-}
-.btn-primary { background: #46178f; color: white; }
-input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+.btn-primary { background: var(--purple); color: white; width: 100%; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+.btn-secondary { background: #eee; width: 100%; padding: 15px; border: none; border-radius: 8px; cursor: pointer; margin-top: 10px; }
 
-/* Game Grid */
-.answer-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 30px; }
-.answer-opt { padding: 30px; border: none; border-radius: 10px; color: white; font-size: 1.2rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
-.opt-0 { background: var(--red); }
-.opt-1 { background: var(--blue); }
-.opt-2 { background: var(--yellow); }
-.opt-3 { background: var(--green); }
+.big-pin-box { background: var(--purple); color: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
+#big-pin-display { font-size: 3.5rem; letter-spacing: 5px; margin: 10px 0; }
 
-/* Leaderboard & Chart */
-.chart-container { display: flex; justify-content: space-around; align-items: flex-end; height: 150px; margin: 20px 0; border-bottom: 2px solid #333; }
-.bar { width: 40px; color: white; transition: height 0.5s; display: flex; align-items: flex-start; justify-content: center; font-size: 0.8rem; }
-.board-row { display: flex; justify-content: space-between; padding: 10px; background: #eee; margin: 5px 0; border-radius: 5px; }
+.correct-box { background: var(--green); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center; font-weight: bold; }
 
-.big-pin-box {
-    background: #46178f;
-    color: white;
-    padding: 20px;
-    border-radius: 15px;
-    margin-bottom: 25px;
-    box-shadow: 0 6px 0 #2a0e57;
-    text-align: center;
-}
+.answer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+.answer-opt { padding: 25px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; }
 
-.big-pin-box p {
-    margin: 0;
-    font-size: 0.9rem;
-    letter-spacing: 2px;
-    font-weight: bold;
-    opacity: 0.8;
-}
+.chart-container { display: flex; justify-content: space-around; align-items: flex-end; height: 120px; margin: 20px 0; border-bottom: 2px solid var(--dark); }
+.bar { width: 40px; color: white; text-align: center; transition: 0.3s; font-size: 0.8rem; }
 
-#big-pin-display {
-    margin: 5px 0 0 0;
-    font-size: 4rem;
-    letter-spacing: 8px;
-    font-family: 'Courier New', Courier, monospace; /* Monospaced for clear PIN reading */
-}
-
-@media (max-width: 600px) { .answer-grid { grid-template-columns: 1fr; } }
+.board-row { display: flex; justify-content: space-between; padding: 8px; background: #ddd; margin-bottom: 5px; border-radius: 4px; }
+.winner-card { border: 5px solid var(--yellow); }
