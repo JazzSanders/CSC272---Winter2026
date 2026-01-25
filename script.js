@@ -94,14 +94,16 @@ async function initSession(role) {
         sessionRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (data && data.questions) {
-                // Players need to download the questions from the Creator's session
-                if (role === 'player') questions = data.questions;
+                // IMPORTANT: Sync the local questions array with the database version
+                questions = data.questions; 
                 
                 if (data.currentQuestion !== gameState.currentQuestion) {
                     gameState.currentQuestion = data.currentQuestion;
-                    if (gameState.currentQuestion < questions.length) {
+                    
+                    // Check if the question index actually exists in the newly downloaded array
+                    if (questions[gameState.currentQuestion]) {
                         loadQuestion();
-                    } else {
+                    } else if (gameState.currentQuestion >= questions.length) {
                         showResults();
                     }
                 }
@@ -118,6 +120,13 @@ async function initSession(role) {
 
 // --- SECTION 3: GAMEPLAY ---
 function loadQuestion() {
+    // Safety Check: If the array is still empty, wait for the database
+    if (!questions || questions.length === 0 || !questions[gameState.currentQuestion]) {
+        console.warn("Question data not ready yet...");
+        document.getElementById('question-text').innerText = "Loading questions...";
+        return;
+    }
+
     gameState.isAnswered = false;
     clearInterval(gameState.timerId);
     
@@ -126,6 +135,7 @@ function loadQuestion() {
     
     const grid = document.getElementById('answer-grid');
     grid.innerHTML = '';
+    
     qData.a.forEach((opt, index) => {
         const btn = document.createElement('button');
         btn.className = `answer-opt opt-${index}`;
