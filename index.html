@@ -59,19 +59,24 @@
         </section>
 
         <section id="audience-screen" class="screen hidden">
-            <div class="stats-container">
-                <h2>Top Players</h2>
-                <div id="leaderboard-list"></div>
-                <hr>
-                <h3>Answer Distribution</h3>
-                <div class="chart-container">
-                    <div id="bar-0" class="bar opt-0"></div>
-                    <div id="bar-1" class="bar opt-1"></div>
-                    <div id="bar-2" class="bar opt-2"></div>
-                    <div id="bar-3" class="bar opt-3"></div>
-                </div>
-                <button class="btn-primary" onclick="nextQuestion()">Next Question</button>
+        <div class="stats-container">
+            <div class="big-pin-box">
+                <p>JOINING PIN</p>
+                <h1 id="big-pin-display">----</h1>
             </div>
+
+            <h2>Top Players</h2>
+            <div id="leaderboard-list"></div>
+            <hr>
+            <h3>Answer Distribution</h3>
+            <div class="chart-container">
+                <div id="bar-0" class="bar opt-0"></div>
+                <div id="bar-1" class="bar opt-1"></div>
+                <div id="bar-2" class="bar opt-2"></div>
+                <div id="bar-3" class="bar opt-3"></div>
+            </div>
+            <button class="btn-primary" onclick="nextQuestion()">Next Question</button>
+        </div>
         </section>
 
         <section id="result-screen" class="screen hidden">

@@ -58,22 +58,20 @@ async function initSession(role) {
     if (role === 'player') {
         gameState.sessionId = document.getElementById('join-code').value;
     } else {
+        // Generate random 4-digit PIN
         gameState.sessionId = Math.floor(1000 + Math.random() * 9000).toString();
     }
 
     if (!gameState.sessionId) return alert("PIN Required");
 
     try {
-        // Auth Check: This is the most common point of failure
         console.log("Connecting to Firebase...");
         const userCredential = await firebase.auth().signInAnonymously();
         const uid = userCredential.user.uid;
-        console.log("Connected! UID:", uid);
 
         const sessionRef = db.ref('sessions/' + gameState.sessionId);
 
         if (role === 'creator') {
-            // Initialize the database session
             await sessionRef.set({
                 creatorId: uid,
                 questions: questions,
@@ -84,6 +82,11 @@ async function initSession(role) {
             
             document.getElementById('editor-screen').classList.add('hidden');
             document.getElementById('audience-screen').classList.remove('hidden');
+            
+            // UPDATE: Display the PIN in the new Big PIN box
+            const bigPinDisplay = document.getElementById('big-pin-display');
+            if (bigPinDisplay) bigPinDisplay.innerText = gameState.sessionId;
+            
             updateAudienceView();
         } else {
             document.getElementById('role-screen').classList.add('hidden');
@@ -94,13 +97,10 @@ async function initSession(role) {
         sessionRef.on('value', (snapshot) => {
             const data = snapshot.val();
             if (data && data.questions) {
-                // IMPORTANT: Sync the local questions array with the database version
-                questions = data.questions; 
+                if (role === 'player') questions = data.questions; 
                 
                 if (data.currentQuestion !== gameState.currentQuestion) {
                     gameState.currentQuestion = data.currentQuestion;
-                    
-                    // Check if the question index actually exists in the newly downloaded array
                     if (questions[gameState.currentQuestion]) {
                         loadQuestion();
                     } else if (gameState.currentQuestion >= questions.length) {
