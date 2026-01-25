@@ -19,7 +19,6 @@ let gameState = {
     playerName: ""
 };
 
-// --- SECTION 1: EDITOR LOGIC ---
 function showEditor() {
     document.getElementById('role-screen').classList.add('hidden');
     document.getElementById('editor-screen').classList.remove('hidden');
@@ -41,98 +40,62 @@ function saveQuestion() {
     alert("Question Added!");
 }
 
-// --- SECTION 2: SESSION MGMT ---
 async function initSession(role) {
-    console.log("Attempting to init session as:", role);
-    
-    // Guard Clause: Don't let Creator start an empty game
-    if (role === 'creator' && questions.length === 0) {
-        alert("Please add at least one question before starting!");
-        return;
-    }
+    if (role === 'creator' && questions.length === 0) return alert("Add questions first!");
 
     gameState.role = role;
-    const nameField = document.getElementById('player-name');
-    gameState.playerName = (nameField && nameField.value) ? nameField.value : "Anonymous";
-    
-    if (role === 'player') {
-        gameState.sessionId = document.getElementById('join-code').value;
-    } else {
-        // Generate random 4-digit PIN
-        gameState.sessionId = Math.floor(1000 + Math.random() * 9000).toString();
-    }
+    gameState.playerName = document.getElementById('player-name').value || "Anonymous";
+    gameState.sessionId = (role === 'player') ? document.getElementById('join-code').value : Math.floor(1000 + Math.random() * 9000).toString();
 
     if (!gameState.sessionId) return alert("PIN Required");
 
     try {
-        console.log("Connecting to Firebase...");
-        const userCredential = await firebase.auth().signInAnonymously();
-        const uid = userCredential.user.uid;
-
+        await firebase.auth().signInAnonymously();
         const sessionRef = db.ref('sessions/' + gameState.sessionId);
 
         if (role === 'creator') {
             await sessionRef.set({
-                creatorId: uid,
                 questions: questions,
                 currentQuestion: 0,
-                status: "active",
-                timestamp: Date.now()
+                status: "active"
             });
-            
             document.getElementById('editor-screen').classList.add('hidden');
             document.getElementById('audience-screen').classList.remove('hidden');
-            
-            // UPDATE: Display the PIN in the new Big PIN box
-            const bigPinDisplay = document.getElementById('big-pin-display');
-            if (bigPinDisplay) bigPinDisplay.innerText = gameState.sessionId;
-            
+            document.getElementById('big-pin-display').innerText = gameState.sessionId;
             updateAudienceView();
         } else {
             document.getElementById('role-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
         }
 
-        // Listener for Game Sync
         sessionRef.on('value', (snapshot) => {
             const data = snapshot.val();
-            if (data && data.questions) {
-                if (role === 'player') questions = data.questions; 
-                
+            if (!data) return;
+
+            if (data.status === "finished") {
+                showResults();
+                return;
+            }
+
+            if (data.questions) {
+                questions = data.questions; 
                 if (data.currentQuestion !== gameState.currentQuestion) {
                     gameState.currentQuestion = data.currentQuestion;
-                    if (questions[gameState.currentQuestion]) {
-                        loadQuestion();
-                    } else if (gameState.currentQuestion >= questions.length) {
-                        showResults();
-                    }
+                    if (questions[gameState.currentQuestion]) loadQuestion();
                 }
             }
         });
 
         document.getElementById('session-info').innerText = `PIN: ${gameState.sessionId}`;
-
-    } catch (error) {
-        console.error("Critical Auth/Database Error:", error);
-        alert("Failed to start game: " + error.message);
-    }
+    } catch (e) { alert(e.message); }
 }
 
-// --- SECTION 3: GAMEPLAY ---
 function loadQuestion() {
-    // Safety Check: If the array is still empty, wait for the database
-    if (!questions || questions.length === 0 || !questions[gameState.currentQuestion]) {
-        console.warn("Question data not ready yet...");
-        document.getElementById('question-text').innerText = "Loading questions...";
-        return;
-    }
-
     gameState.isAnswered = false;
     clearInterval(gameState.timerId);
     
     const qData = questions[gameState.currentQuestion];
     document.getElementById('question-text').innerText = qData.q;
-    
     const grid = document.getElementById('answer-grid');
     grid.innerHTML = '';
     
@@ -152,7 +115,10 @@ function startTimer() {
     gameState.timerId = setInterval(() => {
         gameState.timer--;
         document.getElementById('timer-circle').innerText = gameState.timer;
-        if (gameState.timer <= 0) clearInterval(gameState.timerId);
+        if (gameState.timer <= 0) {
+            clearInterval(gameState.timerId);
+            document.querySelectorAll('.answer-opt').forEach(btn => btn.disabled = true);
+        }
     }, 1000);
 }
 
@@ -162,28 +128,24 @@ function handleAnswer(selectedIndex) {
     
     const correct = questions[gameState.currentQuestion].correct;
     if (selectedIndex === correct) {
-        gameState.score += (gameState.timer * 100);
+        gameState.score += (gameState.timer * 100) + 100;
         db.ref(`sessions/${gameState.sessionId}/leaderboard/${gameState.playerName}`).set(gameState.score);
     }
-    
-    // Response chart
     db.ref(`sessions/${gameState.sessionId}/responses/${selectedIndex}`).transaction(c => (c || 0) + 1);
-    
     document.getElementById('player-score-display').innerText = `Score: ${gameState.score}`;
     document.querySelectorAll('.answer-opt').forEach(btn => btn.disabled = true);
 }
 
-// --- SECTION 4: CREATOR CONTROLS ---
 function nextQuestion() {
-    // Responses for the next round
+    if (gameState.currentQuestion >= questions.length - 1) {
+        db.ref(`sessions/${gameState.sessionId}`).update({ status: "finished" });
+        return;
+    }
     db.ref(`sessions/${gameState.sessionId}/responses`).remove();
-    db.ref(`sessions/${gameState.sessionId}`).update({
-        currentQuestion: gameState.currentQuestion + 1
-    });
+    db.ref(`sessions/${gameState.sessionId}`).update({ currentQuestion: gameState.currentQuestion + 1 });
 }
 
 function updateAudienceView() {
-    // Sync Leaderboard
     db.ref(`sessions/${gameState.sessionId}/leaderboard`).orderByValue().limitToLast(5).on('value', snap => {
         const list = document.getElementById('leaderboard-list');
         list.innerHTML = "";
@@ -192,20 +154,43 @@ function updateAudienceView() {
         });
     });
 
-    // Sync Chart
     db.ref(`sessions/${gameState.sessionId}/responses`).on('value', snap => {
         const data = snap.val() || {};
+        const currentQ = questions[gameState.currentQuestion];
+        if (!currentQ) return;
+
+        const correctCount = data[currentQ.correct] || 0;
+        const countBox = document.getElementById('correct-count-box');
+        
+        if (Object.keys(data).length > 0) {
+            countBox.classList.remove('hidden');
+            document.getElementById('correct-total').innerText = correctCount;
+        } else {
+            countBox.classList.add('hidden');
+        }
+
         for (let i = 0; i < 4; i++) {
-            const count = data[i] || 0;
-            document.getElementById(`bar-${i}`).style.height = `${count * 20}px`;
-            document.getElementById(`bar-${i}`).innerText = count;
+            const bar = document.getElementById(`bar-${i}`);
+            bar.style.height = `${(data[i] || 0) * 30}px`;
+            bar.innerText = data[i] || 0;
         }
     });
 }
 
 function showResults() {
-    document.getElementById('game-screen').classList.add('hidden');
-    document.getElementById('audience-screen').classList.add('hidden');
+    document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
     document.getElementById('result-screen').classList.remove('hidden');
-    document.getElementById('winner-podium').innerText = `Final Score: ${gameState.score}`;
+    
+    db.ref(`sessions/${gameState.sessionId}/leaderboard`).orderByValue().limitToLast(1).once('value', snap => {
+        let winner = "No one!";
+        let highScore = 0;
+        snap.forEach(c => { winner = c.key; highScore = c.val(); });
+        document.getElementById('winner-podium').innerHTML = `
+            <h1 style="font-size:4rem">👑</h1>
+            <h3>Winner: ${winner}</h3>
+            <p>Score: ${highScore}</p>
+            <hr>
+            <p>Your Final Score: ${gameState.score}</p>
+        `;
+    });
 }
