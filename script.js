@@ -16,8 +16,7 @@ let gameState = {
     score: 0,
     timer: 10,
     timerId: null,
-    playerName: "",
-    gameStage: "question" // 'question' or 'reveal'
+    playerName: ""
 };
 
 /** UI NAVIGATION */
@@ -73,7 +72,7 @@ async function initSession(role) {
         
         // Create Session in DB
         await db.ref(`sessions/${gameState.sessionId}`).set({
-            status: "lobby", // Lobby
+            status: "lobby", // New state: Lobby
             questions: questions,
             currentQuestion: -1,
             timestamp: Date.now()
@@ -125,11 +124,9 @@ function listenForPlayers() {
 
 function startActualGame() {
     // Transition from Lobby to Active Game
-    gameState.gameStage = "question";
     db.ref(`sessions/${gameState.sessionId}`).update({
         status: "active",
-        currentQuestion: 0, // Start Q1
-        stage: "question" // Sync stage to Database
+        currentQuestion: 0 // Start Q1
     });
     showScreen('host-game-screen');
     listenForHostLiveUpdates();
@@ -137,84 +134,21 @@ function startActualGame() {
 }
 
 /** HOST: LIVE GAME CONTROL */
-// Button Handler
-function handleHostAction() {
-    const btnGame = document.getElementById('host-action-btn');
-    
-    if (gameState.gameStage === "question") {
-        // Step 1: Reveal Answer -> Graph
-        revealAnswer();
-        
-        // Check if this was the last question
-        const isLastQ = gameState.currentQuestionIndex === questions.length - 1;
-        btnGame.innerText = isLastQ ? "Show Final Leaderboard >" : "Next Question >";
-        gameState.gameStage = "reveal";
-    } 
-    else if (gameState.gameStage === "reveal") {
-        const isLastQ = gameState.currentQuestionIndex === questions.length - 1;
-        
-        if (isLastQ) {
-            // Final Step: Show Leaderboard before Podium
-            showLeaderboard(); 
-            gameState.gameStage = "leaderboard";
-        } else {
-            // Move to next question immediately
-            nextQuestion();
-            gameState.gameStage = "question";
+function listenForHostLiveUpdates() {
+    // Listen for responses to update Bar Chart
+    db.ref(`sessions/${gameState.sessionId}/responses`).on('value', snapshot => {
+        const data = snapshot.val() || {};
+        const total = Object.values(data).reduce((a,b) => a+b, 0); // Total votes
+
+        for(let i=0; i<4; i++) {
+            const count = data[i] || 0;
+            const bar = document.getElementById(`bar-${i}`);
+            // Calculate percentage for height (Max 100%)
+            const pct = total > 0 ? (count / total) * 100 : 0;
+            
+            bar.style.height = `${pct}%`;
+            bar.innerText = count;
         }
-    }
-    else if (gameState.gameStage === "leaderboard") {
-        // From Leaderboard to Final Podium
-        finishGame();
-    }
-}
-
-function revealAnswer() {
-    clearInterval(gameState.timerId); 
-    const currentQ = questions[gameState.currentQuestionIndex];
-    
-    for(let i=0; i<4; i++) {
-        const bar = document.getElementById(`bar-${i}`);
-        if(i === currentQ.correct) {
-            bar.classList.add('bar-correct');
-            bar.classList.remove('bar-dimmed');
-        } else {
-            bar.classList.add('bar-dimmed');
-            bar.classList.remove('bar-correct');
-        }
-    }
-
-    // Players stay on the reveal overlay screen
-    db.ref(`sessions/${gameState.sessionId}`).update({ stage: "reveal" });
-}
-
-async function showLeaderboard() {
-    showScreen('host-leaderboard-screen');
-    
-    // Notify players ONLY now to look at host screen
-    db.ref(`sessions/${gameState.sessionId}`).update({ stage: "leaderboard" });
-
-    const snapshot = await db.ref(`sessions/${gameState.sessionId}/players`).once('value');
-    const playersData = snapshot.val() || {};
-    
-    let sortedPlayers = Object.keys(playersData).map(key => ({
-        name: key,
-        score: playersData[key].score || 0
-    }));
-
-    sortedPlayers.sort((a, b) => b.score - a.score);
-
-    const list = document.getElementById('leaderboard-list');
-    list.innerHTML = "";
-    
-    sortedPlayers.slice(0, 5).forEach((p, index) => {
-        const rankClass = index < 3 ? `rank-${index + 1}` : '';
-        list.innerHTML += `
-            <div class="leaderboard-row ${rankClass}">
-                <span>#${index + 1} ${p.name}</span>
-                <span>${p.score} pts</span>
-            </div>
-        `;
     });
 }
 
@@ -222,36 +156,29 @@ function loadHostQuestion(index) {
     if(!questions[index]) return finishGame();
 
     gameState.currentQuestionIndex = index;
-    gameState.gameStage = "question"; 
-    
-    showScreen('host-game-screen');
-    document.getElementById('host-action-btn').innerText = "Show Answer";
-
     const q = questions[index];
+    
     document.getElementById('host-question-text').innerText = q.q;
     document.getElementById('host-q-counter').innerText = `Q: ${index + 1}/${questions.length}`;
     
+    // Reset Chart
     [0,1,2,3].forEach(i => {
-        const bar = document.getElementById(`bar-${i}`);
-        bar.style.height = '0%';
-        bar.innerText = '0';
-        bar.classList.remove('bar-dimmed', 'bar-correct');
+        document.getElementById(`bar-${i}`).style.height = '0%';
+        document.getElementById(`bar-${i}`).innerText = '0';
     });
 
+    // Reset DB responses for this question
     db.ref(`sessions/${gameState.sessionId}/responses`).remove();
-    db.ref(`sessions/${gameState.sessionId}`).update({
-        stage: "question",
-        currentQuestion: index
-    });
 
-    runTimer('host-timer');
+    runTimer('host-timer', () => {
+        // Optional: Reveal answer on host screen automatically
+    });
 }
 
 function nextQuestion() {
     const nextIdx = gameState.currentQuestionIndex + 1;
     if(nextIdx >= questions.length) {
-        // This path is now handled by handleHostAction, but kept as safety
-        showLeaderboard();
+        finishGame();
     } else {
         db.ref(`sessions/${gameState.sessionId}`).update({ currentQuestion: nextIdx });
         loadHostQuestion(nextIdx);
@@ -264,31 +191,16 @@ function listenToGame() {
         const data = snapshot.val();
         if(!data) return;
 
+        // 1. Check for Game Over
         if(data.status === "finished") {
             showResults(data.winner);
             return;
         }
 
-        // HANDLE STAGES
-        if (data.stage === "reveal") {
-            const currentQ = data.questions[data.currentQuestion];
-            const correctText = currentQ.a[currentQ.correct];
-            document.getElementById('reveal-overlay').classList.remove('hidden');
-            document.getElementById('correct-answer-text').innerText = correctText;
-        } 
-        else if (data.stage === "leaderboard") {
-            // Handle Leaderboard State
-            document.getElementById('reveal-overlay').classList.add('hidden');
-            document.getElementById('answer-grid').innerHTML = 
-                `<h3 style="text-align:center; margin-top:50px;">
-                    🏆 Game Over!<br>Check the Host Screen for the Top 5!
-                 </h3>`;
-        }
-        else if (data.currentQuestion !== gameState.currentQuestionIndex || data.stage === "question") {
-            // Load New Question
+        // 2. Load New Question
+        if(data.currentQuestion !== undefined && data.currentQuestion !== gameState.currentQuestionIndex) {
             gameState.currentQuestionIndex = data.currentQuestion;
-            questions = data.questions; 
-            document.getElementById('reveal-overlay').classList.add('hidden');
+            questions = data.questions; // Sync questions
             renderPlayerQuestion(data.questions[data.currentQuestion]);
         }
     });
@@ -324,7 +236,7 @@ function submitAnswer(idx, correctIdx) {
     const feedback = document.getElementById('feedback-msg');
     
     if(isCorrect) {
-        // Calculate Score: (Score= 50 + (Time remaining * 100))
+        // Calculate Score: (Score= 50+ (Time remaining * 100))
         const points = (gameState.timer * 100) + 50; 
         gameState.score += points;
         feedback.innerText = "Correct! +" + points;

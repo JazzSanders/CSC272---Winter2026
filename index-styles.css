@@ -88,18 +88,9 @@ button { font-family: inherit; }
     align-items: flex-end;
     justify-content: center;
     padding-bottom: 5px;
-    min-height: 0;
+    min-height: 0; /* Important for flex */
 }
 .bar-label { font-size: 0.8rem; margin-top: 5px; font-weight: bold; }
-
-.bar-dimmed {
-    opacity: 0.2;
-    filter: grayscale(100%);
-}
-.bar-correct {
-    box-shadow: 0 0 15px var(--green); /* Glow effect */
-    border: 2px solid white;
-}
 
 /* Game Elements */
 .answer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
@@ -136,60 +127,3 @@ button { font-family: inherit; }
 
 /* Timer */
 .timer-badge { background: var(--text-main); color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; }
-
-/* Player Reveal Overlay */
-#reveal-overlay {
-    background: rgba(255,255,255,0.95);
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 90%;
-    padding: 20px;
-    border-radius: 15px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    z-index: 10;
-    text-align: center;
-    border: 2px solid var(--purple);
-}
-
-.player-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    font-weight: bold;
-}
-.timer-small {
-    width: 40px; height: 40px; line-height: 40px;
-    background: var(--purple); color: white;
-    border-radius: 50%; font-size: 1rem;
-}
-
-/* LEADERBOARD STYLES */
-.leaderboard-container {
-    margin: 20px 0;
-    text-align: left;
-}
-
-.leaderboard-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 15px 20px;
-    margin-bottom: 10px;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    font-weight: bold;
-    font-size: 1.2rem;
-    animation: slideIn 0.5s ease-out;
-}
-
-/* Rank Colors */
-.rank-1 { background: #ffd700; color: #333; border: 2px solid #e6c200; transform: scale(1.05); } /* Gold */
-.rank-2 { background: #c0c0c0; color: #333; border: 2px solid #aaaaaa; } /* Silver */
-.rank-3 { background: #cd7f32; color: white; border: 2px solid #b87333; } /* Bronze */
-
-@keyframes slideIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
