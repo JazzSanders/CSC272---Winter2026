@@ -95,7 +95,7 @@
                 </div>
             </div>
 
-            <button class="btn-primary" id="next-q-btn" onclick="nextQuestion()">Next Question</button>
+            <button class="btn-primary" id="host-action-btn" onclick="handleHostAction()">Show Answer</button>
         </section>
 
         <section id="player-game-screen" class="screen card hidden">
@@ -104,9 +104,9 @@
                 <div id="player-timer-circle" class="timer-small">10</div>
             </div>
             
-            <div id="waiting-msg" class="hidden">
-                <h3>Look at the host screen!</h3>
-                <div class="loader"></div>
+            <div id="reveal-overlay" class="hidden">
+                <h2>The correct answer was:</h2>
+                <h1 id="correct-answer-text" style="font-size: 2rem; color: var(--purple);">...</h1>
             </div>
 
             <div id="answer-grid" class="answer-grid">
