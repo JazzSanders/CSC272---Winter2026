@@ -73,7 +73,7 @@ async function initSession(role) {
         
         // Create Session in DB
         await db.ref(`sessions/${gameState.sessionId}`).set({
-            status: "lobby", // New state: Lobby
+            status: "lobby", // Lobby
             questions: questions,
             currentQuestion: -1,
             timestamp: Date.now()
@@ -139,31 +139,34 @@ function startActualGame() {
 /** HOST: LIVE GAME CONTROL */
 // Button Handler
 function handleHostAction() {
-    const btn = document.getElementById('host-action-btn');
+    const btnGame = document.getElementById('host-action-btn'); // Button on Game Screen
     
     if (gameState.gameStage === "question") {
-        // Step 1: Reveal Answer
+        // Step 1: Reveal Answer -> Graph
         revealAnswer();
-        btn.innerText = "Next Question >";
+        btnGame.innerText = "Show Leaderboard >";
         gameState.gameStage = "reveal";
-    } else {
-        // Step 2: Move to Next
+    } 
+    else if (gameState.gameStage === "reveal") {
+        // Step 2: Show Leaderboard -> Rankings
+        showLeaderboard();
+        gameState.gameStage = "leaderboard";
+    }
+    else if (gameState.gameStage === "leaderboard") {
+        // Step 3: Next Question -> Loop back
         nextQuestion();
-        btn.innerText = "Show Answer"; // Reset label
         gameState.gameStage = "question";
     }
 }
 
 function revealAnswer() {
-    clearInterval(gameState.timerId); // Stop host timer
-    
+    clearInterval(gameState.timerId); 
     const currentQ = questions[gameState.currentQuestionIndex];
-    const correctIndex = currentQ.correct;
-
-    // 1. Update Graph UI (Highlight correct, dim others)
+    
+    // Update Graph UI
     for(let i=0; i<4; i++) {
         const bar = document.getElementById(`bar-${i}`);
-        if(i === correctIndex) {
+        if(i === currentQ.correct) {
             bar.classList.add('bar-correct');
             bar.classList.remove('bar-dimmed');
         } else {
@@ -172,9 +175,43 @@ function revealAnswer() {
         }
     }
 
-    // 2. Notify Players via DB
-    db.ref(`sessions/${gameState.sessionId}`).update({
-        stage: "reveal"
+    // Notify Players
+    db.ref(`sessions/${gameState.sessionId}`).update({ stage: "reveal" });
+}
+
+// Leaderboard Logic
+async function showLeaderboard() {
+    // Switch Screen
+    showScreen('host-leaderboard-screen');
+    
+    // Update DB status so players know to look at host screen
+    db.ref(`sessions/${gameState.sessionId}`).update({ stage: "leaderboard" });
+
+    // Fetch Players and Sort
+    const snapshot = await db.ref(`sessions/${gameState.sessionId}/players`).once('value');
+    const playersData = snapshot.val() || {};
+    
+    // Convert Object to Array: [{name: 'Bob', score: 100}, ...]
+    let sortedPlayers = Object.keys(playersData).map(key => ({
+        name: key,
+        score: playersData[key].score || 0
+    }));
+
+    // Sort Descending (High to Low)
+    sortedPlayers.sort((a, b) => b.score - a.score);
+
+    // Render Top 5
+    const list = document.getElementById('leaderboard-list');
+    list.innerHTML = "";
+    
+    sortedPlayers.slice(0, 5).forEach((p, index) => {
+        const rankClass = index < 3 ? `rank-${index + 1}` : '';
+        list.innerHTML += `
+            <div class="leaderboard-row ${rankClass}">
+                <span>#${index + 1} ${p.name}</span>
+                <span>${p.score} pts</span>
+            </div>
+        `;
     });
 }
 
@@ -182,11 +219,13 @@ function loadHostQuestion(index) {
     if(!questions[index]) return finishGame();
 
     gameState.currentQuestionIndex = index;
-    gameState.gameStage = "question"; // Reset stage
+    gameState.gameStage = "question"; 
+    
+    // Ensure we are on the Game Screen (in case coming from Leaderboard)
+    showScreen('host-game-screen');
     document.getElementById('host-action-btn').innerText = "Show Answer";
 
     const q = questions[index];
-    
     document.getElementById('host-question-text').innerText = q.q;
     document.getElementById('host-q-counter').innerText = `Q: ${index + 1}/${questions.length}`;
     
@@ -195,19 +234,17 @@ function loadHostQuestion(index) {
         const bar = document.getElementById(`bar-${i}`);
         bar.style.height = '0%';
         bar.innerText = '0';
-        bar.classList.remove('bar-dimmed', 'bar-correct'); // Remove effects
+        bar.classList.remove('bar-dimmed', 'bar-correct');
     });
 
     // Reset DB for new question
     db.ref(`sessions/${gameState.sessionId}/responses`).remove();
     db.ref(`sessions/${gameState.sessionId}`).update({
-        stage: "question"
+        stage: "question",
+        currentQuestion: index
     });
 
-    runTimer('host-timer', () => {
-        // Optional: Auto-reveal when time is up?
-        // For now, we wait for Host to click button.
-    });
+    runTimer('host-timer');
 }
 
 function nextQuestion() {
@@ -277,32 +314,32 @@ function listenToGame() {
         const data = snapshot.val();
         if(!data) return;
 
-        // 1. Check for Game Over
         if(data.status === "finished") {
             showResults(data.winner);
             return;
         }
 
-        // 2. Handle Stages (Question vs Reveal)
+        // HANDLE STAGES
         if (data.stage === "reveal") {
-            // Show the correct answer text
             const currentQ = data.questions[data.currentQuestion];
             const correctText = currentQ.a[currentQ.correct];
             
             document.getElementById('reveal-overlay').classList.remove('hidden');
             document.getElementById('correct-answer-text').innerText = correctText;
-            document.getElementById('correct-answer-text').className = `opt-${currentQ.correct}-text`; // Optional coloring
-            return;
         } 
-
-        // 3. Load New Question (Only if we moved to a new question index)
-        if(data.currentQuestion !== undefined && data.currentQuestion !== gameState.currentQuestionIndex) {
+        else if (data.stage === "leaderboard") {
+            // Handle Leaderboard State
+            document.getElementById('reveal-overlay').classList.add('hidden');
+            document.getElementById('answer-grid').innerHTML = 
+                `<h3 style="text-align:center; margin-top:50px;">
+                    👀 Eyes on the Host Screen!<br>Checking scores...
+                 </h3>`;
+        }
+        else if (data.currentQuestion !== gameState.currentQuestionIndex || data.stage === "question") {
+            // Load New Question
             gameState.currentQuestionIndex = data.currentQuestion;
             questions = data.questions; 
-            
-            // Hide reveal screen from previous round
             document.getElementById('reveal-overlay').classList.add('hidden');
-            
             renderPlayerQuestion(data.questions[data.currentQuestion]);
         }
     });
