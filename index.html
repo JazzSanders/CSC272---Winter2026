@@ -95,15 +95,7 @@
                 </div>
             </div>
 
-            <button class="btn-primary" id="host-action-btn" onclick="handleHostAction()">Show Answer</button>
-        </section>
-
-        <section id="host-leaderboard-screen" class="screen card hidden">
-            <h2 style="font-size: 2.5rem;">🏆 Leaderboard 🏆</h2>
-            <div id="leaderboard-list" class="leaderboard-container">
-                </div>
-            
-            <button class="btn-primary" onclick="handleHostAction()">View Final Results ></button>
+            <button class="btn-primary" id="next-q-btn" onclick="nextQuestion()">Next Question</button>
         </section>
 
         <section id="player-game-screen" class="screen card hidden">
@@ -112,9 +104,9 @@
                 <div id="player-timer-circle" class="timer-small">10</div>
             </div>
             
-            <div id="reveal-overlay" class="hidden">
-                <h2>The correct answer was:</h2>
-                <h1 id="correct-answer-text" style="font-size: 2rem; color: var(--purple);">...</h1>
+            <div id="waiting-msg" class="hidden">
+                <h3>Look at the host screen!</h3>
+                <div class="loader"></div>
             </div>
 
             <div id="answer-grid" class="answer-grid">
