@@ -3,81 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Quiz</title>
+    <title>Quiz Game</title>
     <link rel="stylesheet" href="index-styles.css">
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-</head>
+    </head>
 <body>
 
     <div id="app" class="container">
-    <section id="role-screen" class="screen card">
-        <h1 style="color: var(--purple); font-size: 2.5rem; margin-bottom: 10px;">Quiz Game</h1>
-        <p id="session-info" style="font-weight: bold; color: var(--purple);"></p> 
         
-        <div class="join-section">
-            <input type="text" id="player-name" placeholder="Your Name">
-            <input type="text" id="join-code" placeholder="4-Digit PIN">
-            <button class="btn-primary" onclick="initSession('player')">Join Game</button>
-        </div>
-        <div style="margin-top: 25px; border-top: 1px solid #eee; padding-top: 20px;">
-            <button class="btn-secondary" onclick="showScreen('editor-screen')">Create New Quiz</button>
-        </div>
-    </section>
+        <section id="landing-screen" class="screen card">
+            <h1 class="logo-text">Quiz Game</h1>
+            <p>Select your role to begin:</p>
+            <div class="action-buttons">
+                <button class="btn-primary" onclick="setupJoinView()">I am a Player</button>
+                <button class="btn-secondary" onclick="showScreen('editor-screen')">I am the Host</button>
+            </div>
+        </section>
 
-    <section id="editor-screen" class="screen card hidden">
-        <h2>New Quiz Creator</h2>
-        <input type="text" id="q-input" placeholder="Enter your question...">
-        <div class="editor-grid">
-            <input type="text" id="opt-0-in" placeholder="Red Option">
-            <input type="text" id="opt-1-in" placeholder="Blue Option">
-            <input type="text" id="opt-2-in" placeholder="Yellow Option">
-            <input type="text" id="opt-3-in" placeholder="Green Option">
-        </div>
-        <select id="correct-opt">
-            <option value="0">Red is Correct</option>
-            <option value="1">Blue is Correct</option>
-            <option value="2">Yellow is Correct</option>
-            <option value="3">Green is Correct</option>
-        </select>
-        <button class="btn-primary" onclick="saveQuestion()">+ Save Question</button>
-        <button class="btn-secondary" id="start-session-btn" onclick="initSession('creator')" style="display:none;">Finish & Start Session</button>
-    </section>
+        <section id="join-screen" class="screen card hidden">
+            <h2>Join Session</h2>
+            <div class="join-section">
+                <label for="player-name" class="sr-only">Display Name</label>
+                <input type="text" id="player-name" placeholder="Enter your Nickname">
+                
+                <label for="join-code" class="sr-only">Game PIN</label>
+                <input type="number" id="join-code" placeholder="Game PIN">
+                
+                <button class="btn-primary" onclick="initSession('player')">Enter Game</button>
+                <button class="btn-text" onclick="location.reload()">Back</button>
+            </div>
+        </section>
 
-    <section id="audience-screen" class="screen card hidden">
-        <div class="big-pin-box">
-            <p>JOINING PIN</p>
-            <h1 id="big-pin-display">----</h1>
-        </div>
-        
-        <div id="correct-count-box" class="hidden">
-            Correct Answers: <span id="correct-total">0</span>
-        </div>
-        <div class="chart-container" style="display: flex; justify-content: space-around; align-items: flex-end; height: 100px; margin: 20px 0;">
-            <div id="bar-0" class="opt-0" style="width: 20px; height: 0px;"></div>
-            <div id="bar-1" class="opt-1" style="width: 20px; height: 0px;"></div>
-            <div id="bar-2" class="opt-2" style="width: 20px; height: 0px;"></div>
-            <div id="bar-3" class="opt-3" style="width: 20px; height: 0px;"></div>
-        </div>
+        <section id="editor-screen" class="screen card hidden">
+            <h2>Create Quiz</h2>
+            <div class="input-group">
+                <input type="text" id="q-input" placeholder="Type your question here...">
+            </div>
+            <div class="editor-grid">
+                <input type="text" id="opt-0-in" placeholder="Red Option" class="input-red">
+                <input type="text" id="opt-1-in" placeholder="Blue Option" class="input-blue">
+                <input type="text" id="opt-2-in" placeholder="Yellow Option" class="input-yellow">
+                <input type="text" id="opt-3-in" placeholder="Green Option" class="input-green">
+            </div>
+            <label for="correct-opt">Select Correct Answer:</label>
+            <select id="correct-opt">
+                <option value="0">Red Option</option>
+                <option value="1">Blue Option</option>
+                <option value="2">Yellow Option</option>
+                <option value="3">Green Option</option>
+            </select>
+            <div class="action-buttons">
+                <button class="btn-secondary" onclick="saveQuestion()">+ Add Question</button>
+                <button class="btn-primary" id="start-session-btn" onclick="initSession('creator')" style="display:none;">Launch Quiz</button>
+            </div>
+        </section>
 
-        <div id="leaderboard-list"></div>
-        <button class="btn-primary" onclick="nextQuestion()">Next Question</button>
-    </section>
+        <section id="host-lobby-screen" class="screen card hidden">
+            <p class="subtitle">Join at <strong>quizlive.web.app</strong> using PIN:</p>
+            <h1 id="lobby-pin-display" class="big-pin">---</h1>
+            <div class="lobby-player-list" id="lobby-players">
+                <p>Waiting for players...</p>
+            </div>
+            <button class="btn-primary" onclick="startActualGame()">Start Game</button>
+        </section>
 
-    <section id="game-screen" class="screen card hidden">
-        <div id="player-score-display" style="font-weight: bold; margin-bottom: 10px;">Score: 0</div>
-        <div id="timer-circle" class="timer">10</div>
-        <h2 id="question-text">Waiting for host...</h2>
-        <div id="answer-grid" class="answer-grid"></div>
-    </section>
+        <section id="host-game-screen" class="screen card hidden">
+            <div class="host-header">
+                <span id="host-q-counter">Q: 1/5</span>
+                <span class="timer-badge" id="host-timer">10</span>
+            </div>
+            <h2 id="host-question-text">Question Loading...</h2>
+            
+            <div class="chart-container">
+                <div class="bar-group">
+                    <div id="bar-0" class="bar opt-0">0</div>
+                    <span class="bar-label">Red</span>
+                </div>
+                <div class="bar-group">
+                    <div id="bar-1" class="bar opt-1">0</div>
+                    <span class="bar-label">Blue</span>
+                </div>
+                <div class="bar-group">
+                    <div id="bar-2" class="bar opt-2">0</div>
+                    <span class="bar-label">Yel</span>
+                </div>
+                <div class="bar-group">
+                    <div id="bar-3" class="bar opt-3">0</div>
+                    <span class="bar-label">Grn</span>
+                </div>
+            </div>
 
-    <section id="result-screen" class="screen card hidden">
-        <h2>Game Over!</h2>
-        <div id="winner-podium"></div>
-        <button class="btn-primary" onclick="location.reload()">Play Again</button>
-    </section>
-</div>
+            <button class="btn-primary" id="next-q-btn" onclick="nextQuestion()">Next Question</button>
+        </section>
+
+        <section id="player-game-screen" class="screen card hidden">
+            <div class="player-header">
+                <div id="player-score-display">Score: 0</div>
+                <div id="player-timer-circle" class="timer-small">10</div>
+            </div>
+            
+            <div id="waiting-msg" class="hidden">
+                <h3>Look at the host screen!</h3>
+                <div class="loader"></div>
+            </div>
+
+            <div id="answer-grid" class="answer-grid">
+                </div>
+            <p id="feedback-msg"></p>
+        </section>
+
+        <section id="result-screen" class="screen card hidden">
+            <h2>🏆 Podium 🏆</h2>
+            <div id="winner-display">
+                </div>
+            <button class="btn-primary" onclick="location.reload()">Play Again</button>
+        </section>
+
+    </div>
 
     <script src="script.js"></script>
 </body>
