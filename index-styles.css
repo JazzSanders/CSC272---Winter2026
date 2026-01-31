@@ -164,3 +164,32 @@ button { font-family: inherit; }
     background: var(--purple); color: white;
     border-radius: 50%; font-size: 1rem;
 }
+
+/* LEADERBOARD STYLES */
+.leaderboard-container {
+    margin: 20px 0;
+    text-align: left;
+}
+
+.leaderboard-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    font-weight: bold;
+    font-size: 1.2rem;
+    animation: slideIn 0.5s ease-out;
+}
+
+/* Rank Colors */
+.rank-1 { background: #ffd700; color: #333; border: 2px solid #e6c200; transform: scale(1.05); } /* Gold */
+.rank-2 { background: #c0c0c0; color: #333; border: 2px solid #aaaaaa; } /* Silver */
+.rank-3 { background: #cd7f32; color: white; border: 2px solid #b87333; } /* Bronze */
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
