@@ -88,9 +88,18 @@ button { font-family: inherit; }
     align-items: flex-end;
     justify-content: center;
     padding-bottom: 5px;
-    min-height: 0; /* Important for flex */
+    min-height: 0;
 }
 .bar-label { font-size: 0.8rem; margin-top: 5px; font-weight: bold; }
+
+.bar-dimmed {
+    opacity: 0.2;
+    filter: grayscale(100%);
+}
+.bar-correct {
+    box-shadow: 0 0 15px var(--green); /* Glow effect */
+    border: 2px solid white;
+}
 
 /* Game Elements */
 .answer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
@@ -127,3 +136,31 @@ button { font-family: inherit; }
 
 /* Timer */
 .timer-badge { background: var(--text-main); color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; }
+
+/* Player Reveal Overlay */
+#reveal-overlay {
+    background: rgba(255,255,255,0.95);
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    z-index: 10;
+    text-align: center;
+    border: 2px solid var(--purple);
+}
+
+.player-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+.timer-small {
+    width: 40px; height: 40px; line-height: 40px;
+    background: var(--purple); color: white;
+    border-radius: 50%; font-size: 1rem;
+}
